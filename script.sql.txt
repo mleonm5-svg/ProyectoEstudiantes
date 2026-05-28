@@ -1,0 +1,42 @@
+CREATE DATABASE IF NOT EXISTS proyecto_estudiantes;
+USE proyecto_estudiantes;
+
+CREATE TABLE IF NOT EXISTS estudiantes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    carnet VARCHAR(30) NOT NULL,
+    edad INT NOT NULL,
+    correo VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cursos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    codigo VARCHAR(30) NOT NULL,
+    creditos INT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS inscripciones (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    estudiante_id INT NOT NULL,
+    curso_id INT NOT NULL,
+    fecha_inscripcion DATE NOT NULL,
+    estado VARCHAR(30) NOT NULL,
+    FOREIGN KEY (estudiante_id) REFERENCES estudiantes(id),
+    FOREIGN KEY (curso_id) REFERENCES cursos(id)
+);
+
+INSERT INTO estudiantes(nombre, carnet, edad, correo) VALUES
+('Maynor Leon', 'E001', 20, 'maynor@email.com'),
+('Carlos Lopez', 'E002', 21, 'carlos@email.com'),
+('Andrea Perez', 'E003', 19, 'andrea@email.com');
+
+INSERT INTO cursos(nombre, codigo, creditos) VALUES
+('Programacion I', 'PROG101', 5),
+('Base de Datos', 'BD201', 4),
+('Matematica Discreta', 'MAT150', 4);
+
+INSERT INTO inscripciones(estudiante_id, curso_id, fecha_inscripcion, estado) VALUES
+(1, 1, '2026-05-27', 'Activo'),
+(2, 2, '2026-05-27', 'Activo'),
+(3, 3, '2026-05-27', 'Activo');
