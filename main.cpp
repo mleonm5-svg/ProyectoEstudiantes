@@ -8,385 +8,473 @@
 
 using namespace std;
 
-void color(int c) {
-    SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), c);
-}
+// ================= CLASE CONSOLA =================
 
-// ================= ESTUDIANTES =================
-
-void mostrar_estudiantes(EloquentORM &estudiantes) {
-    auto lista = estudiantes.getAll();
-
-    color(11);
-    cout << "\n===== LISTA DE ESTUDIANTES =====\n";
-    color(7);
-
-    for (auto &reg : lista) {
-        cout << "ID: " << reg["id"]
-             << " | Nombre: " << reg["nombre"]
-             << " | Carnet: " << reg["carnet"]
-             << " | Edad: " << reg["edad"]
-             << " | Correo: " << reg["correo"] << endl;
+class Consola {
+public:
+    static void color(int c) {
+        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), c);
     }
-}
+};
 
-void agregar_estudiante(MySQLConexion &conexion) {
-    string nombre, carnet, edad, correo;
-    cin.ignore();
+// ================= CLASE ESTUDIANTES =================
 
-    cout << "\nNombre: ";
-    getline(cin, nombre);
-    cout << "Carnet: ";
-    getline(cin, carnet);
-    cout << "Edad: ";
-    getline(cin, edad);
-    cout << "Correo: ";
-    getline(cin, correo);
+class Estudiantes {
+private:
+    MySQLConexion &conexion;
+    EloquentORM orm;
 
-    string sql = "INSERT INTO estudiantes(nombre, carnet, edad, correo) VALUES ('" +
-                 nombre + "', '" + carnet + "', " + edad + ", '" + correo + "')";
+public:
+    Estudiantes(MySQLConexion &conexion)
+        : conexion(conexion),
+          orm(conexion, "estudiantes", {"id", "nombre", "carnet", "edad", "correo"}) {}
 
-    conexion.executeQuery(sql);
+    void mostrar() {
+        auto lista = orm.getAll();
 
-    color(10);
-    cout << "\nEstudiante agregado correctamente.\n";
-    color(7);
-}
+        Consola::color(11);
+        cout << "\n===== LISTA DE ESTUDIANTES =====\n";
+        Consola::color(7);
 
-void actualizar_estudiante(MySQLConexion &conexion) {
-    string id, nombre, carnet, edad, correo;
-
-    cout << "\nIngrese ID del estudiante a actualizar: ";
-    cin >> id;
-    cin.ignore();
-
-    cout << "Nuevo nombre: ";
-    getline(cin, nombre);
-    cout << "Nuevo carnet: ";
-    getline(cin, carnet);
-    cout << "Nueva edad: ";
-    getline(cin, edad);
-    cout << "Nuevo correo: ";
-    getline(cin, correo);
-
-    string sql = "UPDATE estudiantes SET nombre='" + nombre +
-                 "', carnet='" + carnet +
-                 "', edad=" + edad +
-                 ", correo='" + correo +
-                 "' WHERE id=" + id;
-
-    conexion.executeQuery(sql);
-
-    color(14);
-    cout << "\nEstudiante actualizado correctamente.\n";
-    color(7);
-}
-
-void eliminar_estudiante(MySQLConexion &conexion) {
-    string id;
-
-    cout << "\nIngrese ID del estudiante a eliminar: ";
-    cin >> id;
-
-    conexion.executeQuery("DELETE FROM inscripciones WHERE estudiante_id=" + id);
-    conexion.executeQuery("DELETE FROM estudiantes WHERE id=" + id);
-
-    color(12);
-    cout << "\nEstudiante eliminado correctamente.\n";
-    color(7);
-}
-
-// ================= CURSOS =================
-
-void mostrar_cursos(EloquentORM &cursos) {
-    auto lista = cursos.getAll();
-
-    color(11);
-    cout << "\n===== LISTA DE CURSOS =====\n";
-    color(7);
-
-    for (auto &reg : lista) {
-        cout << "ID: " << reg["id"]
-             << " | Nombre: " << reg["nombre"]
-             << " | Codigo: " << reg["codigo"]
-             << " | Creditos: " << reg["creditos"] << endl;
-    }
-}
-
-void agregar_curso(MySQLConexion &conexion) {
-    string nombre, codigo, creditos;
-    cin.ignore();
-
-    cout << "\nNombre del curso: ";
-    getline(cin, nombre);
-    cout << "Codigo: ";
-    getline(cin, codigo);
-    cout << "Creditos: ";
-    getline(cin, creditos);
-
-    string sql = "INSERT INTO cursos(nombre, codigo, creditos) VALUES('" +
-                 nombre + "','" + codigo + "'," + creditos + ")";
-
-    conexion.executeQuery(sql);
-
-    color(10);
-    cout << "\nCurso agregado correctamente.\n";
-    color(7);
-}
-
-void actualizar_curso(MySQLConexion &conexion) {
-    string id, nombre, codigo, creditos;
-
-    cout << "\nIngrese ID del curso a actualizar: ";
-    cin >> id;
-    cin.ignore();
-
-    cout << "Nuevo nombre: ";
-    getline(cin, nombre);
-    cout << "Nuevo codigo: ";
-    getline(cin, codigo);
-    cout << "Nuevos creditos: ";
-    getline(cin, creditos);
-
-    string sql = "UPDATE cursos SET nombre='" + nombre +
-                 "', codigo='" + codigo +
-                 "', creditos=" + creditos +
-                 " WHERE id=" + id;
-
-    conexion.executeQuery(sql);
-
-    color(14);
-    cout << "\nCurso actualizado correctamente.\n";
-    color(7);
-}
-
-void eliminar_curso(MySQLConexion &conexion) {
-    string id;
-
-    cout << "\nIngrese ID del curso a eliminar: ";
-    cin >> id;
-
-    conexion.executeQuery("DELETE FROM inscripciones WHERE curso_id=" + id);
-    conexion.executeQuery("DELETE FROM cursos WHERE id=" + id);
-
-    color(12);
-    cout << "\nCurso eliminado correctamente.\n";
-    color(7);
-}
-
-// ================= INSCRIPCIONES =================
-
-void mostrar_inscripciones(MySQLConexion &conexion) {
-    string sql =
-        "SELECT inscripciones.id, estudiantes.nombre, cursos.nombre, "
-        "inscripciones.fecha_inscripcion, inscripciones.estado "
-        "FROM inscripciones "
-        "INNER JOIN estudiantes ON inscripciones.estudiante_id = estudiantes.id "
-        "INNER JOIN cursos ON inscripciones.curso_id = cursos.id";
-
-    conexion.executeQuery(sql);
-
-    MYSQL_RES* resultado = mysql_store_result(conexion.getConnection());
-    MYSQL_ROW fila;
-
-    color(11);
-    cout << "\n===== LISTA DE INSCRIPCIONES =====\n";
-    color(7);
-
-    while ((fila = mysql_fetch_row(resultado))) {
-        cout << "ID: " << fila[0]
-             << " | Estudiante: " << fila[1]
-             << " | Curso: " << fila[2]
-             << " | Fecha: " << fila[3]
-             << " | Estado: " << fila[4] << endl;
+        for (auto &reg : lista) {
+            cout << "ID: " << reg["id"]
+                 << " | Nombre: " << reg["nombre"]
+                 << " | Carnet: " << reg["carnet"]
+                 << " | Edad: " << reg["edad"]
+                 << " | Correo: " << reg["correo"] << endl;
+        }
     }
 
-    mysql_free_result(resultado);
-}
+    void agregar() {
+        string nombre, carnet, correo;
+        int edad;
 
-void agregar_inscripcion(MySQLConexion &conexion) {
-    string estudianteId, cursoId, fecha, estado;
+        cin.ignore();
 
-    cout << "\nID del estudiante: ";
-    cin >> estudianteId;
+        cout << "\nNombre: ";
+        getline(cin, nombre);
+        cout << "Carnet: ";
+        getline(cin, carnet);
+        cout << "Edad: ";
+        cin >> edad;
+        cin.ignore();
+        cout << "Correo: ";
+        getline(cin, correo);
 
-    cout << "ID del curso: ";
-    cin >> cursoId;
+        string sql = "INSERT INTO estudiantes(nombre, carnet, edad, correo) VALUES ('" +
+                     nombre + "', '" + carnet + "', " + to_string(edad) + ", '" + correo + "')";
 
-    cin.ignore();
+        conexion.executeQuery(sql);
 
-    cout << "Fecha YYYY-MM-DD: ";
-    getline(cin, fecha);
+        Consola::color(10);
+        cout << "\nEstudiante agregado correctamente.\n";
+        Consola::color(7);
+    }
 
-    cout << "Estado: ";
-    getline(cin, estado);
+    void actualizar() {
+        string id, nombre, carnet, edad, correo;
 
-    string sql =
-        "INSERT INTO inscripciones(estudiante_id, curso_id, fecha_inscripcion, estado) VALUES(" +
-        estudianteId + ", " + cursoId + ", '" + fecha + "', '" + estado + "')";
+        cout << "\nIngrese ID del estudiante a actualizar: ";
+        cin >> id;
+        cin.ignore();
 
-    conexion.executeQuery(sql);
+        cout << "Nuevo nombre: ";
+        getline(cin, nombre);
+        cout << "Nuevo carnet: ";
+        getline(cin, carnet);
+        cout << "Nueva edad: ";
+        getline(cin, edad);
+        cout << "Nuevo correo: ";
+        getline(cin, correo);
 
-    color(10);
-    cout << "\nInscripcion agregada correctamente.\n";
-    color(7);
-}
+        string sql = "UPDATE estudiantes SET nombre='" + nombre +
+                     "', carnet='" + carnet +
+                     "', edad=" + edad +
+                     ", correo='" + correo +
+                     "' WHERE id=" + id;
 
-void eliminar_inscripcion(MySQLConexion &conexion) {
-    string id;
+        conexion.executeQuery(sql);
 
-    cout << "\nIngrese ID de la inscripcion a eliminar: ";
-    cin >> id;
+        Consola::color(14);
+        cout << "\nEstudiante actualizado correctamente.\n";
+        Consola::color(7);
+    }
 
-    conexion.executeQuery("DELETE FROM inscripciones WHERE id=" + id);
+    void eliminar() {
+        string id;
 
-    color(12);
-    cout << "\nInscripcion eliminada correctamente.\n";
-    color(7);
-}
+        cout << "\nIngrese ID del estudiante a eliminar: ";
+        cin >> id;
 
-// ================= MENUS =================
+        conexion.executeQuery("DELETE FROM inscripciones WHERE estudiante_id=" + id);
+        conexion.executeQuery("DELETE FROM estudiantes WHERE id=" + id);
 
-void menu_estudiantes(MySQLConexion &conexion, EloquentORM &estudiantes) {
-    int opcion;
+        Consola::color(12);
+        cout << "\nEstudiante eliminado correctamente.\n";
+        Consola::color(7);
+    }
 
-    do {
-        color(11);
-        cout << "\n===== GESTION DE ESTUDIANTES =====\n";
-        color(7);
+    void menu() {
+        int opcion;
 
-        cout << "1. Mostrar estudiantes\n";
-        cout << "2. Agregar estudiante\n";
-        cout << "3. Actualizar estudiante\n";
-        cout << "4. Eliminar estudiante\n";
-        cout << "5. Regresar\n";
-        cout << "\nSeleccione una opcion: ";
-        cin >> opcion;
+        do {
+            Consola::color(11);
+            cout << "\n===== GESTION DE ESTUDIANTES =====\n";
+            Consola::color(7);
 
-        switch (opcion) {
-            case 1: mostrar_estudiantes(estudiantes); break;
-            case 2: agregar_estudiante(conexion); break;
-            case 3: actualizar_estudiante(conexion); break;
-            case 4: eliminar_estudiante(conexion); break;
-            case 5: break;
-            default: color(12); cout << "\nOpcion invalida.\n"; color(7);
+            cout << "1. Mostrar estudiantes\n";
+            cout << "2. Agregar estudiante\n";
+            cout << "3. Actualizar estudiante\n";
+            cout << "4. Eliminar estudiante\n";
+            cout << "5. Regresar\n";
+            cout << "\nSeleccione una opcion: ";
+            cin >> opcion;
+
+            switch (opcion) {
+                case 1: mostrar(); break;
+                case 2: agregar(); break;
+                case 3: actualizar(); break;
+                case 4: eliminar(); break;
+                case 5: break;
+                default:
+                    Consola::color(12);
+                    cout << "\nOpcion invalida.\n";
+                    Consola::color(7);
+            }
+
+        } while (opcion != 5);
+    }
+};
+
+// ================= CLASE CURSOS =================
+
+class Cursos {
+private:
+    MySQLConexion &conexion;
+    EloquentORM orm;
+
+public:
+    Cursos(MySQLConexion &conexion)
+        : conexion(conexion),
+          orm(conexion, "cursos", {"id", "nombre", "codigo", "creditos"}) {}
+
+    void mostrar() {
+        auto lista = orm.getAll();
+
+        Consola::color(11);
+        cout << "\n===== LISTA DE CURSOS =====\n";
+        Consola::color(7);
+
+        for (auto &reg : lista) {
+            cout << "ID: " << reg["id"]
+                 << " | Nombre: " << reg["nombre"]
+                 << " | Codigo: " << reg["codigo"]
+                 << " | Creditos: " << reg["creditos"] << endl;
+        }
+    }
+
+    void agregar() {
+        string nombre, codigo;
+        int creditos;
+
+        cin.ignore();
+
+        cout << "\nNombre del curso: ";
+        getline(cin, nombre);
+        cout << "Codigo: ";
+        getline(cin, codigo);
+        cout << "Creditos: ";
+        cin >> creditos;
+
+        string sql = "INSERT INTO cursos(nombre, codigo, creditos) VALUES('" +
+                     nombre + "','" + codigo + "'," + to_string(creditos) + ")";
+
+        conexion.executeQuery(sql);
+
+        Consola::color(10);
+        cout << "\nCurso agregado correctamente.\n";
+        Consola::color(7);
+    }
+
+    void actualizar() {
+        string id, nombre, codigo, creditos;
+
+        cout << "\nIngrese ID del curso a actualizar: ";
+        cin >> id;
+        cin.ignore();
+
+        cout << "Nuevo nombre: ";
+        getline(cin, nombre);
+        cout << "Nuevo codigo: ";
+        getline(cin, codigo);
+        cout << "Nuevos creditos: ";
+        getline(cin, creditos);
+
+        string sql = "UPDATE cursos SET nombre='" + nombre +
+                     "', codigo='" + codigo +
+                     "', creditos=" + creditos +
+                     " WHERE id=" + id;
+
+        conexion.executeQuery(sql);
+
+        Consola::color(14);
+        cout << "\nCurso actualizado correctamente.\n";
+        Consola::color(7);
+    }
+
+    void eliminar() {
+        string id;
+
+        cout << "\nIngrese ID del curso a eliminar: ";
+        cin >> id;
+
+        conexion.executeQuery("DELETE FROM inscripciones WHERE curso_id=" + id);
+        conexion.executeQuery("DELETE FROM cursos WHERE id=" + id);
+
+        Consola::color(12);
+        cout << "\nCurso eliminado correctamente.\n";
+        Consola::color(7);
+    }
+
+    void menu() {
+        int opcion;
+
+        do {
+            Consola::color(11);
+            cout << "\n===== GESTION DE CURSOS =====\n";
+            Consola::color(7);
+
+            cout << "1. Mostrar cursos\n";
+            cout << "2. Agregar curso\n";
+            cout << "3. Actualizar curso\n";
+            cout << "4. Eliminar curso\n";
+            cout << "5. Regresar\n";
+            cout << "\nSeleccione una opcion: ";
+            cin >> opcion;
+
+            switch (opcion) {
+                case 1: mostrar(); break;
+                case 2: agregar(); break;
+                case 3: actualizar(); break;
+                case 4: eliminar(); break;
+                case 5: break;
+                default:
+                    Consola::color(12);
+                    cout << "\nOpcion invalida.\n";
+                    Consola::color(7);
+            }
+
+        } while (opcion != 5);
+    }
+};
+
+// ================= CLASE ASIGNATURAS =================
+// Esta clase administra la asignacion de estudiantes a cursos.
+// En la base de datos corresponde a la tabla inscripciones.
+
+class Asignaturas {
+private:
+    MySQLConexion &conexion;
+
+public:
+    Asignaturas(MySQLConexion &conexion) : conexion(conexion) {}
+
+    void mostrar() {
+        string sql =
+            "SELECT inscripciones.id, estudiantes.nombre, cursos.nombre, "
+            "inscripciones.fecha_inscripcion, inscripciones.estado "
+            "FROM inscripciones "
+            "INNER JOIN estudiantes ON inscripciones.estudiante_id = estudiantes.id "
+            "INNER JOIN cursos ON inscripciones.curso_id = cursos.id";
+
+        conexion.executeQuery(sql);
+
+        MYSQL_RES* resultado = mysql_store_result(conexion.getConnection());
+        MYSQL_ROW fila;
+
+        Consola::color(11);
+        cout << "\n===== LISTA DE ASIGNATURAS =====\n";
+        Consola::color(7);
+
+        while ((fila = mysql_fetch_row(resultado))) {
+            cout << "ID: " << fila[0]
+                 << " | Estudiante: " << fila[1]
+                 << " | Curso: " << fila[2]
+                 << " | Fecha: " << fila[3]
+                 << " | Estado: " << fila[4] << endl;
         }
 
-    } while (opcion != 5);
-}
+        mysql_free_result(resultado);
+    }
 
-void menu_cursos(MySQLConexion &conexion, EloquentORM &cursos) {
-    int opcion;
+    void agregar() {
+        int estudianteId, cursoId;
+        string fecha, estado;
 
-    do {
-        color(11);
-        cout << "\n===== GESTION DE CURSOS =====\n";
-        color(7);
+        cout << "\nID del estudiante: ";
+        cin >> estudianteId;
 
-        cout << "1. Mostrar cursos\n";
-        cout << "2. Agregar curso\n";
-        cout << "3. Actualizar curso\n";
-        cout << "4. Eliminar curso\n";
-        cout << "5. Regresar\n";
-        cout << "\nSeleccione una opcion: ";
-        cin >> opcion;
+        cout << "ID del curso: ";
+        cin >> cursoId;
 
-        switch (opcion) {
-            case 1: mostrar_cursos(cursos); break;
-            case 2: agregar_curso(conexion); break;
-            case 3: actualizar_curso(conexion); break;
-            case 4: eliminar_curso(conexion); break;
-            case 5: break;
-            default: color(12); cout << "\nOpcion invalida.\n"; color(7);
+        cin.ignore();
+
+        cout << "Fecha YYYY-MM-DD: ";
+        getline(cin, fecha);
+
+        cout << "Estado: ";
+        getline(cin, estado);
+
+        string sql =
+            "INSERT INTO inscripciones(estudiante_id, curso_id, fecha_inscripcion, estado) VALUES(" +
+            to_string(estudianteId) + ", " +
+            to_string(cursoId) + ", '" +
+            fecha + "', '" +
+            estado + "')";
+
+        conexion.executeQuery(sql);
+
+        Consola::color(10);
+        cout << "\nAsignatura agregada correctamente.\n";
+        Consola::color(7);
+    }
+
+    void eliminar() {
+        string id;
+
+        cout << "\nIngrese ID de la asignatura a eliminar: ";
+        cin >> id;
+
+        conexion.executeQuery("DELETE FROM inscripciones WHERE id=" + id);
+
+        Consola::color(12);
+        cout << "\nAsignatura eliminada correctamente.\n";
+        Consola::color(7);
+    }
+
+    void menu() {
+        int opcion;
+
+        do {
+            Consola::color(11);
+            cout << "\n===== GESTION DE ASIGNATURAS =====\n";
+            Consola::color(7);
+
+            cout << "1. Mostrar asignaturas\n";
+            cout << "2. Agregar asignatura\n";
+            cout << "3. Eliminar asignatura\n";
+            cout << "4. Regresar\n";
+            cout << "\nSeleccione una opcion: ";
+            cin >> opcion;
+
+            switch (opcion) {
+                case 1: mostrar(); break;
+                case 2: agregar(); break;
+                case 3: eliminar(); break;
+                case 4: break;
+                default:
+                    Consola::color(12);
+                    cout << "\nOpcion invalida.\n";
+                    Consola::color(7);
+            }
+
+        } while (opcion != 4);
+    }
+};
+
+// ================= CLASE SISTEMA UNIVERSITARIO =================
+
+class SistemaUniversitario {
+private:
+    MySQLConexion conexion;
+    Estudiantes *estudiantes;
+    Cursos *cursos;
+    Asignaturas *asignaturas;
+
+public:
+    SistemaUniversitario()
+        : conexion(
+            "root",
+            "Maynor1234",
+            "proyecto_estudiantes",
+            "127.0.0.1",
+            3306
+          )
+    {
+        estudiantes = nullptr;
+        cursos = nullptr;
+        asignaturas = nullptr;
+    }
+
+    bool iniciar() {
+        if (!conexion.open()) {
+            Consola::color(12);
+            cerr << "Error al conectar con MySQL" << endl;
+            Consola::color(7);
+            return false;
         }
 
-    } while (opcion != 5);
-}
+        Consola::color(10);
+        cout << "Conexion exitosa a MySQL\n";
+        Consola::color(7);
 
-void menu_inscripciones(MySQLConexion &conexion) {
-    int opcion;
+        estudiantes = new Estudiantes(conexion);
+        cursos = new Cursos(conexion);
+        asignaturas = new Asignaturas(conexion);
 
-    do {
-        color(11);
-        cout << "\n===== GESTION DE INSCRIPCIONES =====\n";
-        color(7);
+        return true;
+    }
 
-        cout << "1. Mostrar inscripciones\n";
-        cout << "2. Agregar inscripcion\n";
-        cout << "3. Eliminar inscripcion\n";
-        cout << "4. Regresar\n";
-        cout << "\nSeleccione una opcion: ";
-        cin >> opcion;
+    void menu_principal() {
+        int opcion;
 
-        switch (opcion) {
-            case 1: mostrar_inscripciones(conexion); break;
-            case 2: agregar_inscripcion(conexion); break;
-            case 3: eliminar_inscripcion(conexion); break;
-            case 4: break;
-            default: color(12); cout << "\nOpcion invalida.\n"; color(7);
-        }
+        do {
+            Consola::color(11);
+            cout << "\n===== SISTEMA UNIVERSITARIO =====\n";
+            Consola::color(7);
 
-    } while (opcion != 4);
-}
+            cout << "1. Gestionar estudiantes\n";
+            cout << "2. Gestionar cursos\n";
+            cout << "3. Gestionar asignaturas\n";
+            cout << "4. Salir\n";
+            cout << "\nSeleccione una opcion: ";
+            cin >> opcion;
+
+            switch (opcion) {
+                case 1: estudiantes->menu(); break;
+                case 2: cursos->menu(); break;
+                case 3: asignaturas->menu(); break;
+                case 4:
+                    Consola::color(14);
+                    cout << "\nSaliendo del sistema...\n";
+                    Consola::color(7);
+                    break;
+                default:
+                    Consola::color(12);
+                    cout << "\nOpcion invalida.\n";
+                    Consola::color(7);
+            }
+
+        } while (opcion != 4);
+    }
+
+    ~SistemaUniversitario() {
+        delete estudiantes;
+        delete cursos;
+        delete asignaturas;
+    }
+};
 
 // ================= MAIN =================
 
 int main() {
-    MySQLConexion conexion(
-        "root",
-        "Maynor1234",
-        "proyecto_estudiantes",
-        "127.0.0.1",
-        3306
-    );
+    SistemaUniversitario sistema;
 
-    if (!conexion.open()) {
-        color(12);
-        cerr << "Error al conectar con MySQL" << endl;
-        color(7);
+    if (!sistema.iniciar()) {
         return 1;
     }
 
-    color(10);
-    cout << "Conexion exitosa a MySQL\n";
-    color(7);
-
-    vector<string> columnasEstudiantes = {"id", "nombre", "carnet", "edad", "correo"};
-    vector<string> columnasCursos = {"id", "nombre", "codigo", "creditos"};
-
-    EloquentORM estudiantes(conexion, "estudiantes", columnasEstudiantes);
-    EloquentORM cursos(conexion, "cursos", columnasCursos);
-
-    int opcion;
-
-    do {
-        color(11);
-        cout << "\n===== SISTEMA UNIVERSITARIO =====\n";
-        color(7);
-
-        cout << "1. Gestionar estudiantes\n";
-        cout << "2. Gestionar cursos\n";
-        cout << "3. Gestionar inscripciones\n";
-        cout << "4. Salir\n";
-        cout << "\nSeleccione una opcion: ";
-        cin >> opcion;
-
-        switch (opcion) {
-            case 1: menu_estudiantes(conexion, estudiantes); break;
-            case 2: menu_cursos(conexion, cursos); break;
-            case 3: menu_inscripciones(conexion); break;
-            case 4:
-                color(14);
-                cout << "\nSaliendo del sistema...\n";
-                color(7);
-                break;
-            default:
-                color(12);
-                cout << "\nOpcion invalida.\n";
-                color(7);
-        }
-
-    } while (opcion != 4);
+    sistema.menu_principal();
 
     return 0;
 }
